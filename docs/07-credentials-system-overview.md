@@ -4,6 +4,29 @@
 
 ---
 
+## 🤖 AI Agent Context
+
+**READ THIS DOCUMENT** to understand how n8n credentials work before implementing authentication.
+
+| Auth Type | Complexity | Document |
+|-----------|------------|----------|
+| API Key/Token | Low | → [08-api-key-credentials.md](./08-api-key-credentials.md) |
+| OAuth2 | Medium | → [09-oauth2-credentials.md](./09-oauth2-credentials.md) |
+
+**This Document Covers**:
+- Credential structure and interface
+- Authentication methods (header, query, basic)
+- Credential testing
+- Connecting credentials to nodes
+
+**After Reading This**:
+- For API key auth → [08-api-key-credentials.md](./08-api-key-credentials.md)
+- For OAuth2 auth → [09-oauth2-credentials.md](./09-oauth2-credentials.md)
+
+**Reference Files**: `credentials/GithubIssuesApi.credentials.ts`, `credentials/GithubIssuesOAuth2Api.credentials.ts`
+
+---
+
 ## What Are Credentials?
 
 Credentials in n8n:

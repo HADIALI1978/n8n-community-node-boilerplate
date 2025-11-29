@@ -4,12 +4,43 @@
 
 ---
 
+## 🤖 AI Agent Context
+
+**USE THIS DOCUMENT** to add icons to your node and credentials.
+
+| Requirement | Specification |
+|-------------|--------------|
+| Format | SVG (PNG deprecated) |
+| ViewBox | `0 0 24 24` |
+| Colors | `currentColor` for auto theme |
+| Variants | `.svg` and `.dark.svg` (optional) |
+
+**Quick Reference**:
+```typescript
+// Single icon
+icon: 'file:mynode.svg'
+
+// Light/dark variants
+icon: { light: 'file:icon.svg', dark: 'file:icon.dark.svg' }
+```
+
+**Related**:
+- [21-node-json-metadata.md](./21-node-json-metadata.md) - Catalog metadata
+
+**Reference Directory**: `icons/`
+
+---
+
 ## Icon Requirements
 
-- **Format**: SVG only
-- **Size**: 24x24px (or scalable)
-- **Variants**: Light and dark mode versions
-- **Location**: Node directory or shared `/icons/`
+- **Format**: SVG strongly recommended. PNG support deprecated since ~2022; all official n8n nodes use SVG exclusively
+- **ViewBox**: `viewBox="0 0 24 24"` standard (scales automatically in n8n UI)
+- **Colors**: Use `stroke="currentColor"` and `fill="none"` for automatic theme adaptation (light/dark mode)
+- **Variants**: Single SVG with `currentColor` auto-adapts to theme; explicit `.dark.svg` variant only needed for custom color control
+- **Location**: Node directory (`nodes/MyNode/mynode.svg`) or shared `/icons/` folder
+- **Size**: SVG is vector-based, no pixel size required. Rendered at appropriate size by n8n
+
+> **Note**: PNG icons (60x60px) mentioned in pre-2022 documentation are deprecated. All 2024-2025 verified nodes use SVG. SVG failures show as 404s; PNG paths are not supported in modern n8n.
 
 ---
 

@@ -177,11 +177,12 @@ export class GithubIssuesOAuth2Api implements ICredentialType {
 
 ## Grant Types
 
-### Authorization Code (Most Common)
+### Authorization Code (Default)
+
+Most common for user-facing apps. User authorizes in browser, app receives code. n8n handles token refresh automatically if `refresh_token` is returned by the provider.
 
 ```typescript
 {
-  displayName: 'Grant Type',
   name: 'grantType',
   type: 'hidden',
   default: 'authorizationCode',
@@ -192,9 +193,10 @@ Used for: Web applications with user interaction
 
 ### Client Credentials
 
+For server-to-server authentication without user interaction. Token refresh is automatic.
+
 ```typescript
 {
-  displayName: 'Grant Type',
   name: 'grantType',
   type: 'hidden',
   default: 'clientCredentials',
@@ -205,16 +207,17 @@ Used for: Server-to-server without user interaction
 
 ### PKCE (Proof Key for Code Exchange)
 
+Enhanced security for public clients (mobile apps, SPAs). Uses code verifier/challenge instead of client_secret.
+
 ```typescript
 {
-  displayName: 'Grant Type',
   name: 'grantType',
   type: 'hidden',
   default: 'pkce',
 }
 ```
 
-Used for: Mobile/SPA applications
+> **Note on Token Refresh**: n8n automatically refreshes tokens when they expire (typically on 401 responses). If your provider returns non-401 errors (e.g., 403) for expired tokens, refresh may not trigger automatically. Some providers don't return `refresh_token` in all cases.
 
 ---
 

@@ -106,6 +106,38 @@
 
 ---
 
+## Common Pitfalls & Solutions
+
+| Pitfall | Symptom | Solution |
+|---------|---------|----------|
+| **No error handling** | Node crashes on API error | Use `try-catch` + `NodeOperationError` |
+| **Hardcoded credentials** | Security vulnerability | Always use `getCredentials()` |
+| **Synchronous operations** | Node hangs n8n | Ensure all operations are `async` |
+| **Large arrays in memory** | OOM on big datasets | Use pagination/streaming patterns |
+| **No pagination** | API rate limits hit | Implement cursor/offset pagination |
+| **Missing TypeScript types** | Runtime errors in production | Use strict TypeScript + Zod validation |
+| **Tests in production** | Bloated bundle | Exclude `**/*.test.ts` from build |
+| **Timeout issues** | Long-running ops fail | Set explicit timeouts, use queue mode |
+| **Initialize SDK per item** | Poor performance | Initialize SDK ONCE before loop |
+| **Forget `pairedItem`** | Broken item linking | Always include `pairedItem: { item: i }` |
+| **Hot-reload not working** | Manual restart needed | Check Vite config + Docker volumes |
+| **Credential mocking fails** | Tests broken | Mock full IExecuteFunctions object |
+
+---
+
+## Performance Checklist
+
+| Aspect | Best Practice |
+|--------|---------------|
+| **API Requests** | Use native n8n `httpRequest` helper |
+| **Pagination** | Cursor-based, configurable limit |
+| **Batching** | `Promise.allSettled()` for parallel ops |
+| **Rate Limiting** | Add delays between calls (`setTimeout(100)`) |
+| **Timeouts** | Set explicit timeouts (`timeout: 30000`) |
+| **Error Handling** | Return partial results with errors |
+
+---
+
 ## Getting Help
 
 - [n8n Community Forum](https://community.n8n.io/)

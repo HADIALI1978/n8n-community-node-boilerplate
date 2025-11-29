@@ -83,6 +83,15 @@ routing: {
 
 Control how property values are sent in requests.
 
+### Send Types
+
+| Type | Behavior | Example |
+|------|----------|---------|
+| `query` | Appends to URL query string | `?state=open` |
+| `body` | Merges into JSON request body | `{"title": "value"}` |
+| `header` | Sets HTTP header | `X-Custom: value` |
+| `path` | Interpolates into URL (added Q3 2024) | `/users/{userId}` |
+
 ### Query Parameters
 
 ```typescript
@@ -153,6 +162,28 @@ Control how property values are sent in requests.
     },
   },
 }
+```
+
+### Path Parameters (Added n8n 1.80.0, October 2024)
+
+Interpolate values directly into the URL path:
+
+```typescript
+{
+  displayName: 'User ID',
+  name: 'userId',
+  type: 'string',
+  default: '',
+  routing: {
+    send: {
+      type: 'path',
+      property: 'userId',
+    },
+  },
+}
+
+// Combined with routing.request.url using placeholder:
+// url: '=/users/{{$parameter.userId}}/posts'
 ```
 
 ---

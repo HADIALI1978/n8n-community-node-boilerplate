@@ -4,6 +4,32 @@
 
 ---
 
+## 🤖 AI Agent Context
+
+**USE THIS DOCUMENT** to ensure code quality before committing and publishing.
+
+| Command | Purpose |
+|---------|---------|
+| `npm run lint` | Check for issues |
+| `npm run lint:fix` | Auto-fix issues |
+
+**Key Rules Enforced**:
+- n8n-specific node/credential rules (`n8n-nodes-base/*`)
+- TypeScript best practices (`@typescript-eslint/*`)
+- Required descriptions on properties
+- Correct naming conventions (camelCase)
+
+**When to Run**:
+- Before every commit
+- Before publishing to npm
+- CI/CD pipeline validation
+
+**Related**:
+- [22-development-workflow.md](./22-development-workflow.md) - Development setup
+- [25-preparing-for-publication.md](./25-preparing-for-publication.md) - Pre-publish checklist
+
+---
+
 ## Running the Linter
 
 ```bash

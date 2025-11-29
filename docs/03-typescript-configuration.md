@@ -4,38 +4,56 @@
 
 ---
 
-## Recommended tsconfig.json
+## 🤖 AI Agent Context
+
+**USE THIS DOCUMENT** as a reference for TypeScript configuration. Required for proper n8n node compilation.
+
+| Topic | What It Covers |
+|-------|---------------|
+| Module settings | CommonJS output (required by n8n) |
+| Strict mode | Type safety options |
+| Build output | dist/ folder structure |
+| IDE config | VS Code settings |
+
+**Key Rule**: n8n nodes MUST compile to CommonJS. Do NOT use ESNext/bundler settings.
+
+**Related**:
+- [02-package-json-configuration.md](./02-package-json-configuration.md) - Package setup
+- [04-node-anatomy-and-architecture.md](./04-node-anatomy-and-architecture.md) - Node structure
+
+---
+
+## Recommended tsconfig.json (Official n8n-nodes-starter)
+
+> **Important**: n8n nodes compile to CommonJS modules for Node.js runtime compatibility. Do NOT use ESNext/bundler settings.
 
 ```json
 {
   "compilerOptions": {
-    "strict": true,
+    "target": "es2020",
+    "lib": ["es2020"],
     "module": "commonjs",
     "moduleResolution": "node",
-    "target": "es2019",
-    "lib": ["es2019", "es2020", "es2022.error"],
-    "removeComments": true,
-    "useUnknownInCatchVariables": false,
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "strictNullChecks": true,
-    "preserveConstEnums": true,
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "incremental": true,
     "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
-    "skipLibCheck": true,
-    "outDir": "./dist/"
+    "outDir": "./dist",
+    "removeComments": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true
   },
-  "include": [
-    "credentials/**/*",
-    "nodes/**/*",
-    "nodes/**/*.json",
-    "package.json"
-  ]
+  "include": ["nodes", "credentials", "packages"],
+  "exclude": ["node_modules", "dist"]
 }
 ```
 
@@ -72,23 +90,27 @@
   "compilerOptions": {
     "module": "commonjs",
     "moduleResolution": "node",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   }
 }
 ```
 
 | Option | Purpose |
-|--------|---------|
-| `module` | Output CommonJS modules (required for n8n) |
-| `moduleResolution` | Use Node.js module resolution |
+|--------|--------|
+| `module` | Output CommonJS modules (**required** - n8n loads nodes via `require()`) |
+| `moduleResolution` | Use Node.js module resolution (**required** - do NOT use "bundler") |
 | `esModuleInterop` | Enable ES module interop with CommonJS |
+| `allowSyntheticDefaultImports` | Allow default imports from modules without default export |
+
+> **Warning**: Using `"module": "ESNext"` or `"moduleResolution": "bundler"` will cause runtime errors. n8n requires CommonJS output.
 
 ### Output Settings
 
 ```json
 {
   "compilerOptions": {
-    "target": "es2019",
+    "target": "es2020",
     "outDir": "./dist/",
     "declaration": true,
     "sourceMap": true,
@@ -110,7 +132,7 @@
 ```json
 {
   "compilerOptions": {
-    "lib": ["es2019", "es2020", "es2022.error"],
+    "lib": ["es2020"],
     "resolveJsonModule": true,
     "skipLibCheck": true
   }
@@ -154,7 +176,7 @@ For simpler projects:
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es2019",
+    "target": "es2020",
     "outDir": "./dist/",
     "strict": true,
     "esModuleInterop": true,

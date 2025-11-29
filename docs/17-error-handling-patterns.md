@@ -56,20 +56,64 @@ async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 
 ## NodeOperationError
 
+For general node execution failures (validation, logic errors, non-HTTP operations):
+
 ```typescript
+import { NodeOperationError } from 'n8n-workflow';
+
 // Basic error
 throw new NodeOperationError(this.getNode(), 'Something went wrong');
 
-// With item index
+// With item index (critical for multi-item workflows)
 throw new NodeOperationError(this.getNode(), error, { itemIndex: i });
 
-// With description
+// With description (shows in UI as subtitle)
 throw new NodeOperationError(
   this.getNode(),
   'API rate limit exceeded',
   { description: 'Wait 60 seconds before retrying' }
 );
+
+// With cause (preserves original error stack trace)
+throw new NodeOperationError(
+  this.getNode(),
+  'Validation failed',
+  { itemIndex: i, cause: originalError }
+);
 ```
+
+**Available options**: `itemIndex`, `description`, `cause`
+
+---
+
+## NodeApiError
+
+For API/HTTP errors with response data (extends `NodeOperationError`):
+
+```typescript
+import { NodeApiError } from 'n8n-workflow';
+
+// For HTTP errors with response
+if (error.response?.status === 401) {
+  throw new NodeApiError(this.getNode(), error, { 
+    httpCode: '401',
+    message: 'Invalid credentials' 
+  });
+}
+
+// With full response data (auto-redacts credentials)
+throw new NodeApiError(this.getNode(), error, {
+  httpCode: String(error.response?.status),
+  message: error.response?.data?.message || 'API request failed',
+  itemIndex: i,
+});
+```
+
+**Available options**: All `NodeOperationError` options plus `httpCode`, `message`, `response`
+
+**When to use**:
+- `NodeOperationError`: General node errors, validation failures, non-HTTP operations
+- `NodeApiError`: HTTP/API errors with status codes and response bodies (auto-parses axios/got errors)
 
 ---
 

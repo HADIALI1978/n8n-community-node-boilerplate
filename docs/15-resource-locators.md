@@ -4,6 +4,29 @@
 
 ---
 
+## 🤖 AI Agent Context
+
+**USE THIS DOCUMENT** to implement multi-mode selection fields (list, URL, ID modes).
+
+| Mode Type | User Experience |
+|-----------|-----------------|
+| **List** | Searchable dropdown from API |
+| **URL** | Paste link, auto-extract ID |
+| **ID/Name** | Direct input with validation |
+
+**When to Use**:
+- User needs multiple ways to select a resource
+- URLs should be parseable to extract IDs
+- Better UX than plain text input for identifiers
+
+**Prerequisites**:
+- [14-list-search-methods.md](./14-list-search-methods.md) - Required for list mode
+- [06-node-properties-reference.md](./06-node-properties-reference.md) - Property basics
+
+**Reference Directory**: `nodes/GithubIssues/` (uses resource locators for owner/repo)
+
+---
+
 ## Overview
 
 Resource Locators provide multiple ways to select a resource:

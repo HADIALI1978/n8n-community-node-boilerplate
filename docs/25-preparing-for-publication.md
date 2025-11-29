@@ -4,6 +4,27 @@
 
 ---
 
+## 🤖 AI Agent Context
+
+**READ THIS DOCUMENT** before publishing your node to npm.
+
+| Checklist Category | Items |
+|-------------------|-------|
+| package.json | Name, version, keywords, license |
+| Code Quality | Lint passes, build succeeds, tests pass |
+| Documentation | README, LICENSE, credentials docs |
+| Files | Icons, metadata JSON, no sensitive data |
+
+**Prerequisites Completed**:
+- [24-linting-and-code-quality.md](./24-linting-and-code-quality.md) - Code quality checks
+- [23-testing-strategies.md](./23-testing-strategies.md) - Testing complete
+
+**After This Document**:
+- [26-publishing-to-npm.md](./26-publishing-to-npm.md) - Publish to npm
+- [27-n8n-cloud-verification.md](./27-n8n-cloud-verification.md) - Cloud verification
+
+---
+
 ## Pre-Publish Checklist
 
 ### Package.json

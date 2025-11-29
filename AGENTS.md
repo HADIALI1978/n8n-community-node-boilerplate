@@ -1,6 +1,6 @@
 # n8n Custom Node Development: AI Agent Rules
 
-> **Version**: 1.0.0  
+> **Version**: 2.0.0  
 > **Last Updated**: 2025-11-29  
 > **Purpose**: Comprehensive guidance for AI coding assistants building n8n custom nodes.
 
@@ -8,27 +8,44 @@
 
 ## 1. PROJECT OVERVIEW
 
-This is the official n8n custom node starter repository. It teaches AI assistants how to build custom n8n community nodes using real-world examples, comprehensive documentation, and established patterns. The repository contains working node implementations, credential configurations, and 30+ documentation files covering all aspects of n8n node development.
+This is the official n8n custom node starter repository. It teaches AI assistants how to build custom n8n community nodes using real-world examples, comprehensive documentation, and established patterns. The repository contains working node implementations, credential configurations, and 31 documentation files covering all aspects of n8n node development.
+
+**Key Stats**: This approach powers 1,500+ community nodes with millions of downloads (and growing rapidly).
 
 ---
 
 ## 2. TECHNOLOGY STACK
 
-| Component | Technology | Version |
-|-----------|------------|---------|
-| **Runtime** | Node.js | v22+ |
-| **Language** | TypeScript | 5.x (strict mode) |
-| **Framework** | n8n Node SDK | Latest |
-| **CLI Tool** | @n8n/node-cli | Latest |
-| **Linting** | ESLint | 9.x |
-| **Formatting** | Prettier | Latest |
+### Core Stack
+
+| Component | Technology | Version | Purpose |
+|-----------|------------|---------|---------|
+| **Runtime** | Node.js | v20.15.0+ (v22 LTS also supported) | JavaScript runtime |
+| **Language** | TypeScript | 5.6+ | Static typing for reliability |
+| **Framework** | n8n Node SDK | Latest | Node development framework |
+| **CLI Tool** | @n8n/node-cli | Latest | Build tooling, dev server |
+
+### Recommended DX Stack (Maximum Developer Experience)
+
+| Tool | Version | Purpose | Why |
+|------|---------|---------|-----|
+| **Vite** | 5.x | Bundler/Dev Server | Fast HMR; native ESM |
+| **Vitest** | 1.x | Test Framework | Fast; native ESM; better DX |
+| **Zod** | 3.x | Runtime Validation | Type-safe param validation with UX feedback |
+| **ESLint + Prettier** | Latest | Code Quality | Enforces consistency |
+| **Husky + lint-staged** | Latest | Pre-commit | Prevents bad commits reaching main |
+| **semantic-release** | Latest | Versioning | Auto-semver + changelog + npm publish |
+| **pnpm** | 9.x | Package Manager | Fast installs; strict peer deps |
+| **TurboRepo** | Latest | Build Caching | Speeds up CI on subsequent runs |
 
 ---
 
 ## 3. PROJECT STRUCTURE
 
+### Standard Structure (This Repository)
+
 ```
-craft-n8n-node/
+n8n-nodes-starter/
 ├── credentials/                    # Authentication configurations
 │   ├── GithubIssuesApi.credentials.ts      # API key auth example
 │   └── GithubIssuesOAuth2Api.credentials.ts # OAuth2 auth example
@@ -46,10 +63,45 @@ craft-n8n-node/
 │       └── shared/                # Reusable utilities
 │           ├── transport.ts       # API request wrapper
 │           └── descriptions.ts    # UI component definitions
-├── docs/                          # 30+ documentation files (00-30)
+├── docs/                          # 31 documentation files (00-30)
 ├── icons/                         # Node icons (SVG)
 ├── package.json                   # Node registration & metadata
 └── tsconfig.json                  # TypeScript configuration
+```
+
+### Scalable Monorepo Structure (50+ Nodes)
+
+```
+my-n8n-nodes/
+├── packages/
+│   ├── nodes-base/
+│   │   ├── MyApiNode/
+│   │   │   ├── src/
+│   │   │   │   ├── MyApiNode.node.ts       # Main INodeType implementation
+│   │   │   │   ├── description.ts          # INodeTypeDescription with properties
+│   │   │   │   ├── GenericFunctions.ts     # Shared helpers
+│   │   │   │   ├── services/
+│   │   │   │   │   ├── TableOperations.ts
+│   │   │   │   │   ├── UserOperations.ts
+│   │   │   │   │   └── ApiClient.ts
+│   │   │   │   └── credentials/
+│   │   │   │       └── MyApiCredentials.credentials.ts
+│   │   │   ├── __tests__/
+│   │   │   │   ├── MyApiNode.test.ts
+│   │   │   │   └── services/TableOperations.test.ts
+│   │   │   ├── vite.config.ts
+│   │   │   └── package.json
+│   │   └── MyTrigger/
+│   │       └── ...
+├── .vscode/settings.json
+├── .github/workflows/
+│   ├── ci.yml
+│   ├── release.yml
+│   └── test.yml
+├── tsconfig.json                           # Shared TypeScript config
+├── package.json                            # Root monorepo config
+├── pnpm-workspace.yaml
+└── turbo.json                              # Build caching config
 ```
 
 ---
@@ -160,55 +212,113 @@ export class YourService implements INodeType {
 
 ---
 
-### Pattern B: Programmatic SDK-Based Node
+### Pattern B: Resource-Operation Dispatch (Programmatic)
 
-**When to use**: Complex logic, SDK integration, non-REST protocols
+**When to use**: Complex logic, SDK integration, non-REST protocols (Used by Supabase, Monday, Notion)
 
 ```typescript
-export class YourNode implements INodeType {
-  description: INodeTypeDescription = { /* ... */ };
+// MyApiNode.node.ts
+export class MyApiNode implements INodeType {
+  description: INodeTypeDescription = {
+    displayName: 'My API',
+    name: 'myApi',
+    group: ['transform'],
+    version: 1,
+    properties: [
+      {
+        displayName: 'Resource',
+        name: 'resource',
+        type: 'options',
+        options: [
+          { name: 'Table', value: 'table' },
+          { name: 'User', value: 'user' }
+        ],
+        default: 'table'
+      },
+      {
+        displayName: 'Operation',
+        name: 'operation',
+        type: 'options',
+        displayOptions: { show: { resource: ['table'] } },
+        options: [
+          { name: 'Get All', value: 'getAll' },
+          { name: 'Create', value: 'create' }
+        ],
+        default: 'getAll'
+      }
+    ]
+  };
 
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-    // 1. Get credentials ONCE (not per item)
-    const credentials = await this.getCredentials('yourServiceApi') as {
-      apiKey: string;
-      projectId: number;
-    };
+    const resource = this.getNodeParameter('resource', 0) as string;
+    const operation = this.getNodeParameter('operation', 0) as string;
 
-    // 2. Initialize SDK client ONCE
-    const client = new YourSDK(credentials.apiKey, {
-      projectId: credentials.projectId,
-    });
-
-    // 3. Get input items
-    const items = this.getInputData();
-    const returnData: INodeExecutionData[] = [];
-
-    // 4. Process each item
-    for (let i = 0; i < items.length; i++) {
-      try {
-        const operation = this.getNodeParameter('operation', i) as string;
-        const param1 = this.getNodeParameter('param1', i) as string;
-
-        const result = await client[operation](param1);
-
-        returnData.push({
-          json: result,
-          pairedItem: { item: i }
-        });
-      } catch (error) {
-        if (this.continueOnFail()) {
-          returnData.push({
-            json: { error: error.message },
-            pairedItem: { item: i }
-          });
-          continue;
-        }
-        throw new NodeOperationError(this.getNode(), error, { itemIndex: i });
+    // Dispatch to service
+    if (resource === 'table') {
+      if (operation === 'getAll') {
+        return await new TableOperations().getAll.call(this);
+      } else if (operation === 'create') {
+        return await new TableOperations().create.call(this);
+      }
+    } else if (resource === 'user') {
+      if (operation === 'getAll') {
+        return await new UserOperations().getAll.call(this);
       }
     }
 
-    return [returnData];
+    throw new Error(`Unknown resource: ${resource}, operation: ${operation}`);
+  }
+}
+```
+
+**Service File Pattern**:
+
+```typescript
+// services/TableOperations.ts
+export class TableOperations {
+  async getAll(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+    const credentials = await this.getCredentials('myApi') as ICredentials;
+    const tableId = this.getNodeParameter('tableId', 0) as string;
+
+    try {
+      const response = await this.helpers.httpRequest({
+        method: 'GET',
+        url: `https://api.myservice.com/tables/${tableId}/rows`,
+        headers: {
+          'Authorization': `Bearer ${credentials.apiKey}` 
+        },
+        qs: {
+          limit: 100,
+          offset: 0
+        }
+      });
+
+      return this.helpers.returnJsonArray(response.data);
+    } catch (error) {
+      if (this.helpers.isNodeApiError(error)) {
+        throw error;
+      }
+      throw new NodeOperationError(this.getNode(), error as Error);
+    }
+  }
+
+  async create(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+    const credentials = await this.getCredentials('myApi');
+    const tableId = this.getNodeParameter('tableId', 0) as string;
+    const items = this.getInputData();
+
+    const created = [];
+    for (const item of items) {
+      const response = await this.helpers.httpRequest({
+        method: 'POST',
+        url: `https://api.myservice.com/tables/${tableId}/rows`,
+        headers: { 'Authorization': `Bearer ${credentials.apiKey}` },
+        body: item.json
+      });
+      created.push({ json: response.data });
+    }
+
+    return [created];
   }
 }
 ```
@@ -258,7 +368,208 @@ export const userSelect: INodeProperties = {
 
 ---
 
-## 6. CREDENTIALS PATTERNS
+### Pattern D: Cursor-Based Pagination
+
+```typescript
+// services/PaginatedOperations.ts
+export class PaginatedOperations {
+  async getAll(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+    const credentials = await this.getCredentials('myApi');
+    const limit = (this.getNodeParameter('limit', 0) as number) || 100;
+    
+    let cursor: string | undefined;
+    const allItems: IDataObject[] = [];
+
+    while (true) {
+      const response = await this.helpers.httpRequest({
+        method: 'GET',
+        url: 'https://api.myservice.com/items',
+        headers: { 'Authorization': `Bearer ${credentials.apiKey}` },
+        qs: {
+          limit,
+          cursor: cursor || undefined
+        }
+      });
+
+      allItems.push(...response.data.items);
+
+      if (!response.data.nextCursor || allItems.length >= limit) {
+        break;
+      }
+
+      cursor = response.data.nextCursor;
+      // Small delay to respect rate limits
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    return [allItems.map(item => ({ json: item }))];
+  }
+}
+```
+
+---
+
+### Pattern E: Batching for Performance
+
+```typescript
+async batchCreate(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+  const items = this.getInputData();
+  const batchSize = 50;
+  const results: IDataObject[] = [];
+
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+
+    // Process batch in parallel
+    const batchResults = await Promise.allSettled(
+      batch.map(item =>
+        this.helpers.httpRequest({
+          method: 'POST',
+          url: 'https://api.myservice.com/items',
+          body: item.json
+        })
+      )
+    );
+
+    // Collect results (including errors)
+    batchResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        results.push(result.value.data);
+      } else {
+        results.push({ error: result.reason.message, itemIndex: i + index });
+      }
+    });
+
+    // Small delay between batches to respect rate limits
+    if (i + batchSize < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  return [results.map(r => ({ json: r }))];
+}
+```
+
+---
+
+### Pattern F: Webhook Triggers
+
+```typescript
+// MyTrigger.node.ts
+export class MyTrigger implements INodeType {
+  description: INodeTypeDescription = {
+    displayName: 'My API Trigger',
+    name: 'myApiTrigger',
+    group: ['trigger'],
+    version: 1,
+    webhooks: [
+      {
+        name: 'default',
+        httpMethod: 'POST',
+        responseMode: 'onReceived',
+        path: 'webhook',
+      },
+    ],
+    properties: []
+  };
+
+  webhookMethods = {
+    default: {
+      async checkExists(this: IHookFunctions): Promise<boolean> {
+        // Check if webhook already exists
+        return false;
+      },
+      async create(this: IHookFunctions): Promise<boolean> {
+        // Register webhook with external service
+        const webhookUrl = this.getNodeWebhookUrl('default');
+        // ... register with API
+        return true;
+      },
+      async delete(this: IHookFunctions): Promise<boolean> {
+        // Unregister webhook from external service
+        return true;
+      },
+    },
+  };
+}
+```
+
+---
+
+## 6. TYPE SAFETY & VALIDATION
+
+### Zod Runtime Validation Pattern
+
+```typescript
+// src/types.ts
+import { z } from 'zod';
+
+export const MyApiCredentialsSchema = z.object({
+  apiKey: z.string().min(1, 'API Key is required'),
+  baseUrl: z.string().url().optional()
+});
+
+export type MyApiCredentials = z.infer<typeof MyApiCredentialsSchema>;
+
+export const TableOperationSchema = z.object({
+  resource: z.literal('table'),
+  operation: z.enum(['getAll', 'create', 'update', 'delete']),
+  tableId: z.string().min(1),
+  limit: z.number().min(1).max(1000).default(100),
+  offset: z.number().min(0).default(0)
+});
+
+export type TableOperation = z.infer<typeof TableOperationSchema>;
+```
+
+**Using in Node:**
+
+```typescript
+// src/services/TableOperations.ts
+import { TableOperationSchema, MyApiCredentialsSchema } from '../types';
+
+export class TableOperations {
+  async getAll(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+    try {
+      // Validate parameters
+      const params = TableOperationSchema.parse({
+        resource: this.getNodeParameter('resource', 0),
+        operation: this.getNodeParameter('operation', 0),
+        tableId: this.getNodeParameter('tableId', 0),
+        limit: this.getNodeParameter('limit', 0),
+        offset: this.getNodeParameter('offset', 0)
+      });
+
+      // Validate credentials
+      const rawCreds = await this.getCredentials('myApi');
+      const credentials = MyApiCredentialsSchema.parse(rawCreds);
+
+      // Now parameters and credentials are type-safe
+      const response = await this.helpers.httpRequest({
+        method: 'GET',
+        url: `${credentials.baseUrl || 'https://api.myservice.com'}/tables/${params.tableId}`,
+        qs: {
+          limit: params.limit,
+          offset: params.offset
+        }
+      });
+
+      return this.helpers.returnJsonArray(response.data);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // User-friendly error message
+        const messages = error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+        throw new NodeOperationError(this.getNode(), `Invalid parameters: ${messages.join('; ')}`);
+      }
+      throw error;
+    }
+  }
+}
+```
+
+---
+
+## 7. CREDENTIALS PATTERNS
 
 ### API Key Authentication
 
@@ -298,7 +609,236 @@ Reference: `docs/09-oauth2-credentials.md` and `credentials/GithubIssuesOAuth2Ap
 
 ---
 
-## 7. DOCUMENTATION NAVIGATION
+## 8. TESTING STRATEGY (90%+ Coverage Target)
+
+### Vitest Configuration
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+import path from 'path';
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'node',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts'],
+      branches: 90,
+      functions: 90,
+      lines: 90,
+      statements: 90
+    },
+    setupFiles: ['./test/setup.ts']
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src')
+    }
+  }
+});
+```
+
+### Unit Test Pattern
+
+```typescript
+// __tests__/MyApiNode.test.ts
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { IExecuteFunctions } from 'n8n-workflow';
+import { TableOperations } from '../src/services/TableOperations';
+
+describe('TableOperations', () => {
+  let mockExecuteFunctions: Partial<IExecuteFunctions>;
+
+  beforeEach(() => {
+    mockExecuteFunctions = {
+      getNodeParameter: vi.fn((param) => {
+        const params = {
+          resource: 'table',
+          operation: 'getAll',
+          tableId: 'tbl_123'
+        };
+        return params[param as keyof typeof params];
+      }),
+      getCredentials: vi.fn().mockResolvedValue({ apiKey: 'test-key' }),
+      helpers: {
+        httpRequest: vi.fn(),
+        returnJsonArray: vi.fn((data) => [{ json: data }]),
+        isNodeApiError: vi.fn(() => false)
+      },
+      getNode: vi.fn(() => ({ name: 'test' })),
+      getInputData: vi.fn(() => [])
+    };
+  });
+
+  it('fetches all table rows', async () => {
+    const mockData = [{ id: 1, name: 'Row 1' }];
+    (mockExecuteFunctions.helpers!.httpRequest as any).mockResolvedValue({
+      data: mockData
+    });
+
+    const operations = new TableOperations();
+    const result = await operations.getAll.call(mockExecuteFunctions as IExecuteFunctions);
+
+    expect(mockExecuteFunctions.helpers!.httpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        url: expect.stringContaining('/tables/tbl_123/rows')
+      })
+    );
+  });
+});
+```
+
+---
+
+## 9. DEVELOPMENT WORKFLOW
+
+### Local Development (Native)
+
+```bash
+# Clone and setup
+git clone https://github.com/n8n-io/n8n-nodes-starter.git my-nodes
+cd my-nodes
+pnpm install
+pnpm dev  # Starts dev server with hot reload
+
+# Access n8n at http://localhost:5678
+```
+
+### Docker Development (Production Parity)
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    volumes:
+      - ./dist:/home/node/.n8n/custom/MyApiNode
+      - n8n_data:/root/.n8n
+    environment:
+      - N8N_CUSTOM_EXTENSIONS=/home/node/.n8n/custom
+      - NODE_ENV=development
+    command: n8n start
+
+volumes:
+  n8n_data:
+```
+
+### VS Code Configuration
+
+**.vscode/settings.json:**
+```json
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true
+    }
+  }
+}
+```
+
+### Debugging in VS Code
+
+```json
+// .vscode/launch.json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Vitest Debug",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["test", "--inspect-brk", "--watch"],
+      "console": "integratedTerminal"
+    }
+  ]
+}
+```
+
+---
+
+## 10. PERFORMANCE CHECKLIST
+
+| Aspect | Best Practice | Implementation |
+|--------|---------------|-----------------|
+| **API Requests** | Use native n8n `httpRequest` helper | Automatic retry + timeout |
+| **Pagination** | Cursor-based, configurable limit | Loop until no cursor, max 1000 per call |
+| **Batching** | `Promise.allSettled()` for parallel ops | Process 50-100 items at once |
+| **Caching** | Cache credentials/auth tokens | Store in execution scope |
+| **Memory** | Stream items instead of buffering | Use `yield` for large datasets |
+| **Rate Limiting** | Respect API limits with delays | Add `setTimeout(100)` between calls |
+| **Timeouts** | Set explicit timeouts | `httpRequest` options: `timeout: 30000` |
+| **Error Handling** | Granular try-catch per operation | Return partial results with errors |
+
+---
+
+## 11. PUBLISHING WORKFLOW
+
+### Semantic Release with GitHub Actions
+
+```yaml
+# .github/workflows/release.yml
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      
+      - run: pnpm ci
+      - run: pnpm test --coverage
+      - run: pnpm build
+      
+      - uses: cycjimmy/semantic-release-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+### Package.json for Publishing
+
+```json
+{
+  "name": "@myorg/n8n-nodes-myapi",
+  "version": "0.1.0",
+  "description": "n8n node for MyAPI",
+  "keywords": ["n8n-community-node-package"],
+  "repository": "github:myorg/n8n-nodes-myapi",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "nodes": ["dist/nodes/MyApi/MyApi.node.js"],
+    "credentials": ["dist/credentials/MyApiApi.credentials.js"]
+  }
+}
+```
+
+---
+
+## 12. DOCUMENTATION NAVIGATION
 
 ### Complete Documentation Tree (31 Files)
 
@@ -351,15 +891,12 @@ docs/
 | **Dynamic Dropdowns** | `docs/14-list-search-methods.md` | `docs/15-resource-locators.md` |
 | **Pagination** | `docs/16-pagination-handling.md` | `docs/12-declarative-routing.md` |
 | **Error Handling** | `docs/17-error-handling-patterns.md` | `docs/30-troubleshooting-guide.md` |
-| **Icons & Branding** | `docs/20-icons-and-branding.md` | `docs/21-node-json-metadata.md` |
 | **Testing** | `docs/23-testing-strategies.md` | `docs/22-development-workflow.md` |
 | **Publishing** | `docs/25-preparing-for-publication.md` | `docs/26-publishing-to-npm.md` |
-| **Cloud Verification** | `docs/27-n8n-cloud-verification.md` | `docs/25-preparing-for-publication.md` |
-| **Troubleshooting** | `docs/30-troubleshooting-guide.md` | `docs/17-error-handling-patterns.md` |
 
 ---
 
-## 8. DEVELOPMENT COMMANDS
+## 13. DEVELOPMENT COMMANDS
 
 ```bash
 # Install dependencies
@@ -377,13 +914,36 @@ npm run lint
 # Auto-fix lint issues
 npm run lint:fix
 
+# Run tests
+npm run test
+
+# Run tests with coverage
+npm run test:coverage
+
 # Create release
 npm run release
 ```
 
 ---
 
-## 9. PACKAGE.JSON REGISTRATION
+## 14. COMMON PITFALLS & SOLUTIONS
+
+| Pitfall | Symptom | Solution |
+|---------|---------|----------|
+| **No error handling** | Node crashes on API error | Use `try-catch` + `NodeOperationError` |
+| **Hardcoded credentials** | Security vulnerability | Always use `getCredentials()` |
+| **Synchronous operations** | Node hangs n8n | Ensure all operations are `async` |
+| **Large arrays in memory** | OOM on big datasets | Use pagination/streaming patterns |
+| **No pagination** | API rate limits hit | Implement cursor/offset pagination |
+| **Missing TypeScript types** | Runtime errors in production | Use strict TypeScript + Zod validation |
+| **Tests in production** | Bloated bundle | Exclude `**/*.test.ts` from build |
+| **Timeout issues** | Long-running ops fail | Set explicit timeouts, use queue mode |
+| **Initialize SDK per item** | Poor performance | Initialize SDK ONCE before loop |
+| **Forget `pairedItem`** | Broken item linking | Always include `pairedItem: { item: i }` |
+
+---
+
+## 15. PACKAGE.JSON REGISTRATION
 
 **CRITICAL**: All nodes and credentials MUST be registered:
 
@@ -391,6 +951,7 @@ npm run release
 {
   "name": "n8n-nodes-yourservice",
   "n8n": {
+    "n8nNodesApiVersion": 1,
     "nodes": [
       "dist/nodes/YourService/YourService.node.js"
     ],
@@ -403,20 +964,7 @@ npm run release
 
 ---
 
-## 10. COMMON MISTAKES TO AVOID
-
-| ❌ DON'T | ✅ DO |
-|----------|-------|
-| Initialize SDK per item | Initialize SDK ONCE before loop |
-| Forget `pairedItem` | Always include `pairedItem: { item: i }` |
-| Hardcode credentials | Use `this.getCredentials()` |
-| Skip error handling | Use `this.continueOnFail()` pattern |
-| Create single large file | Split into resources/operations |
-| Use `any` types | Define proper TypeScript interfaces |
-
----
-
-## 11. FILE REFERENCES
+## 16. FILE REFERENCES
 
 When building nodes, reference these key files:
 
@@ -431,15 +979,44 @@ When building nodes, reference these key files:
 
 ---
 
-## 12. QUICK START STEPS
+## 17. QUICK START CHECKLIST
 
-1. **Research API** → Identify auth method, endpoints, parameters
-2. **Choose architecture** → Declarative (REST) or Programmatic (SDK)
-3. **Create credentials** → `credentials/YourServiceApi.credentials.ts`
-4. **Create node structure** → Follow file structure patterns above
-5. **Define resources** → One folder per API resource
-6. **Implement operations** → Separate file per operation
-7. **Register in package.json** → Add to `n8n.nodes` and `n8n.credentials`
-8. **Test with `npm run dev`** → Verify in n8n workflow editor
-9. **Lint and build** → `npm run lint:fix && npm run build`
-10. **Publish** → `npm publish`
+```bash
+# 1. Initialize project (5 min)
+git clone https://github.com/n8n-io/n8n-nodes-starter.git my-nodes
+cd my-nodes && pnpm install
+
+# 2. Create your first node (10 min)
+mkdir -p nodes/MyApiNode
+# Implement MyApiNode.node.ts + description.ts
+
+# 3. Add credentials (5 min)
+# Create credentials/MyApiCredentials.credentials.ts
+
+# 4. Write tests (10 min)
+# Create __tests__/MyApiNode.test.ts
+
+# 5. Start development (2 min)
+pnpm dev  # Watch mode
+
+# 6. Test locally (5 min)
+# Open http://localhost:5678
+
+# 7. Publish to npm (3 min)
+# Set up semantic-release + GitHub Actions
+
+# Total: ~45 minutes to production-ready node
+```
+
+---
+
+## 18. KEY TAKEAWAYS
+
+✅ **Use Vite + Vitest + TypeScript + Zod** for maximum DX and quality  
+✅ **Docker for local dev** matches production environment  
+✅ **Resource-operation dispatch** scales to 100+ operations  
+✅ **Service-based organization** enables testing and maintenance  
+✅ **90%+ test coverage** prevents production bugs  
+✅ **Pagination/batching** essential for scalability  
+✅ **Semantic versioning** + GitHub Actions automates releases  
+✅ **Comprehensive docs** drive adoption and contributions

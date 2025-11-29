@@ -466,6 +466,42 @@ Is it a REST API?
 3. **Pair items correctly** - Use `pairedItem: { item: i }`
 4. **Log appropriately** - Use `this.logger`
 5. **Sanitize errors** - Never leak credentials
+6. **Use service-based pattern** - For 10+ operations
+7. **Add rate limiting** - `setTimeout(100)` between API calls
+
+---
+
+## Resource-Operation Dispatch Pattern
+
+For complex nodes with many operations, use service-based dispatch (used by Supabase, Monday, Notion):
+
+```typescript
+// MyApiNode.node.ts
+async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+  const resource = this.getNodeParameter('resource', 0) as string;
+  const operation = this.getNodeParameter('operation', 0) as string;
+
+  // Dispatch to service
+  if (resource === 'table') {
+    if (operation === 'getAll') {
+      return await new TableOperations().getAll.call(this);
+    } else if (operation === 'create') {
+      return await new TableOperations().create.call(this);
+    }
+  } else if (resource === 'user') {
+    if (operation === 'getAll') {
+      return await new UserOperations().getAll.call(this);
+    }
+  }
+
+  throw new Error(`Unknown resource: ${resource}, operation: ${operation}`);
+}
+```
+
+**Benefits:**
+- Scales to 100+ operations
+- Service files testable independently
+- Clear separation of concerns
 
 ---
 

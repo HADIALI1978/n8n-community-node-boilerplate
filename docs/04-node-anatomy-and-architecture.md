@@ -175,12 +175,16 @@ inputs: [NodeConnectionTypes.Main],
 outputs: [NodeConnectionTypes.Main],
 ```
 
-**Connection Types**:
-| Type | Use Case |
-|------|----------|
-| `NodeConnectionTypes.Main` | Standard data flow |
-| `NodeConnectionTypes.AiTool` | AI agent tool input |
-| Multiple outputs | Error handling, branching |
+**Connection Types** (as of n8n 1.80+):
+| Type | Value | Use Case |
+|------|-------|----------|
+| `NodeConnectionTypes.Main` | `'main'` | Standard data flow |
+| `NodeConnectionTypes.AI` | `'ai'` | AI chain/agent flow (replaces deprecated `AiTool`) |
+| Multiple outputs | | Error handling, branching |
+
+> **Note**: Both `inputs: ['main']` (string literal) and `inputs: [NodeConnectionTypes.Main]` (enum) are valid and equivalent. String literals are simpler; enums provide TypeScript compile-time checking. The enum import is: `import { NodeConnectionTypes } from 'n8n-workflow';`
+
+> **AI Tool Support**: To make a node usable as an AI Agent tool, add `usableAsTool: true` to the input/output definition. This was added in n8n 1.0.0 (June 2024) with LangChain integration.
 
 **Multiple Outputs Example**:
 ```typescript

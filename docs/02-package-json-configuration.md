@@ -55,7 +55,7 @@
     "url": "https://github.com/your-org/n8n-nodes-your-service/issues"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.15.0"
   },
   "scripts": {
     "build": "n8n-node build",
@@ -63,8 +63,11 @@
     "dev": "n8n-node dev",
     "lint": "n8n-node lint",
     "lint:fix": "n8n-node lint --fix",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
     "release": "n8n-node release",
-    "prepublishOnly": "n8n-node prerelease"
+    "prepublishOnly": "npm run test && n8n-node prerelease"
   },
   "files": [
     "dist"
@@ -85,7 +88,10 @@
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
     "release-it": "^19.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.6.0",
+    "vitest": "^1.0.0",
+    "@vitest/coverage-v8": "^1.0.0",
+    "zod": "^3.0.0"
   },
   "peerDependencies": {
     "n8n-workflow": "*"
@@ -148,10 +154,11 @@ This is the most important section—it tells n8n where to find your nodes and c
 
 | Field | Purpose |
 |-------|---------|
-| `n8nNodesApiVersion` | API version (always `1` currently) |
-| `strict` | Enable strict validation (recommended: `true`) |
+| `n8nNodesApiVersion` | API version (always `1` currently, no v2 planned) |
 | `credentials` | Array of paths to credential JS files |
 | `nodes` | Array of paths to node JS files |
+
+> **Note**: Some community examples show a `strict` field in the n8n block, but this is **not officially documented** and may be ignored by n8n. Focus on the three required fields above.
 
 **Important**: Paths point to **compiled JS files** in `dist/`, not TypeScript sources.
 
@@ -265,12 +272,12 @@ Only the `dist/` folder is published to npm. This keeps your package size minima
 ```json
 {
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.15.0"
   }
 }
 ```
 
-Match n8n's minimum Node.js version (currently 18+).
+Match n8n's minimum Node.js version (currently v20.15.0+, with v22 LTS also supported). Node 18 support was dropped in October 2024.
 
 ---
 

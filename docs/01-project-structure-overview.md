@@ -15,12 +15,15 @@
 | Icon | `nodes/{NodeName}/{nodename}.svg` or `icons/` |
 | List search | `nodes/{NodeName}/listSearch/` |
 | Resources | `nodes/{NodeName}/resources/{resource}/` |
+| Services | `nodes/{NodeName}/services/{Resource}Operations.ts` |
 | Shared utils | `nodes/{NodeName}/shared/` |
+| Unit tests | `nodes/{NodeName}/__tests__/` |
 
 **File Naming Rules**:
 - Node/Credential classes: **PascalCase** (e.g., `GithubIssues.node.ts`)
 - Icons: **lowercase** (e.g., `github.svg`)
 - Internal names: **camelCase** (e.g., `name: 'githubIssues'`)
+- Test files: **PascalCase.test.ts** (e.g., `MyNode.test.ts`)
 
 **Related**:
 - [02-package-json-configuration.md](./02-package-json-configuration.md) - Register files
@@ -44,6 +47,11 @@ n8n-nodes-your-package/
 │       ├── YourNode.node.json      # Codex metadata
 │       ├── your-icon.svg           # Node-specific icon
 │       ├── GenericFunctions.ts     # Helper functions (optional)
+│       ├── __tests__/              # Unit tests (Vitest)
+│       │   └── YourNode.test.ts
+│       ├── services/               # Service-based operations
+│       │   ├── TableOperations.ts
+│       │   └── UserOperations.ts
 │       ├── listSearch/             # Dynamic dropdown methods
 │       │   └── getItems.ts
 │       ├── resources/              # Resource-based organization
@@ -59,13 +67,59 @@ n8n-nodes-your-package/
 ├── dist/                           # Compiled output (generated)
 ├── node_modules/                   # Dependencies (generated)
 ├── package.json                    # Package configuration
-├── package-lock.json               # Dependency lock file
+├── pnpm-lock.yaml                  # Dependency lock file (pnpm recommended)
 ├── tsconfig.json                   # TypeScript configuration
+├── vitest.config.ts                # Test configuration
 ├── eslint.config.mjs               # ESLint configuration
 ├── README.md                       # Package documentation
 ├── LICENSE.md                      # License (MIT recommended)
 └── CHANGELOG.md                    # Version history
 ```
+
+---
+
+## Scalable Monorepo Structure (50+ Nodes)
+
+For large-scale projects with multiple nodes:
+
+```
+my-n8n-nodes/
+├── packages/
+│   ├── nodes-base/
+│   │   ├── MyApiNode/
+│   │   │   ├── src/
+│   │   │   │   ├── MyApiNode.node.ts       # Main INodeType implementation
+│   │   │   │   ├── description.ts          # INodeTypeDescription
+│   │   │   │   ├── GenericFunctions.ts     # Shared helpers
+│   │   │   │   ├── services/
+│   │   │   │   │   ├── TableOperations.ts
+│   │   │   │   │   └── UserOperations.ts
+│   │   │   │   └── credentials/
+│   │   │   │       └── MyApiCredentials.credentials.ts
+│   │   │   ├── __tests__/
+│   │   │   │   ├── MyApiNode.test.ts
+│   │   │   │   └── services/TableOperations.test.ts
+│   │   │   ├── vite.config.ts
+│   │   │   └── package.json
+│   │   └── MyTrigger/
+│   │       └── ...
+├── .vscode/settings.json
+├── .github/workflows/
+│   ├── ci.yml
+│   ├── release.yml
+│   └── test.yml
+├── tsconfig.json                           # Shared TypeScript config
+├── package.json                            # Root monorepo config
+├── pnpm-workspace.yaml
+└── turbo.json                              # Build caching config
+```
+
+**Why This Structure:**
+- Enables hot-reload via Vite watch
+- Scales to 50+ nodes in single monorepo
+- Shared types via root `tsconfig`
+- Independent versioning per node
+- Clear separation of concerns (services, credentials, tests)
 
 ---
 
@@ -139,6 +193,50 @@ Reusable code across operations:
 | `descriptions.ts` | Reusable property definitions (resource locators, common fields) |
 | `transport.ts` | HTTP request helper functions |
 | `utils.ts` | General utility functions (parsing, formatting) |
+
+### `/nodes/YourNode/services/`
+
+Service-based operations pattern (used by Supabase, Monday, Notion):
+
+```typescript
+// services/TableOperations.ts
+export class TableOperations {
+  async getAll(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+    const credentials = await this.getCredentials('myApi');
+    const tableId = this.getNodeParameter('tableId', 0) as string;
+
+    const response = await this.helpers.httpRequest({
+      method: 'GET',
+      url: `https://api.myservice.com/tables/${tableId}/rows`,
+      headers: { 'Authorization': `Bearer ${credentials.apiKey}` }
+    });
+
+    return this.helpers.returnJsonArray(response.data);
+  }
+}
+```
+
+**Benefits:**
+- Single file easy to navigate
+- Service files testable independently
+- Clear separation of concerns
+- Scales to 100+ operations
+
+### `/nodes/YourNode/__tests__/`
+
+Unit tests using Vitest:
+
+```typescript
+// __tests__/MyNode.test.ts
+import { describe, it, expect, vi } from 'vitest';
+import { TableOperations } from '../services/TableOperations';
+
+describe('TableOperations', () => {
+  it('fetches all rows', async () => {
+    // Test implementation
+  });
+});
+```
 
 ### `/nodes/YourNode/listSearch/`
 

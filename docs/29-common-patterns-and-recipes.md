@@ -153,6 +153,123 @@ const output = simplify ? { id: result.id, name: result.name } : result;
 
 ---
 
+## Batching Pattern (Performance)
+
+Process items in parallel batches for better performance:
+
+```typescript
+async batchCreate(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+  const items = this.getInputData();
+  const batchSize = 50;
+  const results: IDataObject[] = [];
+
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+
+    // Process batch in parallel
+    const batchResults = await Promise.allSettled(
+      batch.map(item =>
+        this.helpers.httpRequest({
+          method: 'POST',
+          url: 'https://api.myservice.com/items',
+          body: item.json
+        })
+      )
+    );
+
+    // Collect results (including errors)
+    batchResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        results.push(result.value.data);
+      } else {
+        results.push({ error: result.reason.message, itemIndex: i + index });
+      }
+    });
+
+    // Small delay between batches to respect rate limits
+    if (i + batchSize < items.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  return [results.map(r => ({ json: r }))];
+}
+```
+
+---
+
+## Cursor-Based Pagination Pattern
+
+```typescript
+async getAll(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+  const credentials = await this.getCredentials('myApi');
+  const limit = (this.getNodeParameter('limit', 0) as number) || 100;
+  
+  let cursor: string | undefined;
+  const allItems: IDataObject[] = [];
+
+  while (true) {
+    const response = await this.helpers.httpRequest({
+      method: 'GET',
+      url: 'https://api.myservice.com/items',
+      headers: { 'Authorization': `Bearer ${credentials.apiKey}` },
+      qs: {
+        limit,
+        cursor: cursor || undefined
+      }
+    });
+
+    allItems.push(...response.data.items);
+
+    if (!response.data.nextCursor || allItems.length >= limit) {
+      break;
+    }
+
+    cursor = response.data.nextCursor;
+    // Small delay to respect rate limits
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  return [allItems.map(item => ({ json: item }))];
+}
+```
+
+---
+
+## Zod Validation Pattern
+
+Type-safe parameter validation:
+
+```typescript
+import { z } from 'zod';
+
+const TableOperationSchema = z.object({
+  resource: z.literal('table'),
+  operation: z.enum(['getAll', 'create', 'update', 'delete']),
+  tableId: z.string().min(1),
+  limit: z.number().min(1).max(1000).default(100)
+});
+
+// In execute:
+try {
+  const params = TableOperationSchema.parse({
+    resource: this.getNodeParameter('resource', 0),
+    operation: this.getNodeParameter('operation', 0),
+    tableId: this.getNodeParameter('tableId', 0),
+    limit: this.getNodeParameter('limit', 0)
+  });
+  // params is now type-safe
+} catch (error) {
+  if (error instanceof z.ZodError) {
+    const messages = error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+    throw new NodeOperationError(this.getNode(), `Invalid parameters: ${messages.join('; ')}`);
+  }
+  throw error;
+}
+```
+
+---
+
 ## Next Steps
 
 - [28 - Complete Code Examples](./28-complete-code-examples.md)

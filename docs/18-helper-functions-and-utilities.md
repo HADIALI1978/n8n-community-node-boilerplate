@@ -4,6 +4,42 @@
 
 ---
 
+## 🤖 AI Agent Context
+
+**USE THIS DOCUMENT** to implement reusable helper functions for your node.
+
+| Helper Type | Purpose |
+|-------------|---------|
+| Transport functions | API request wrappers with auth |
+| Utility functions | Parsing, formatting, validation |
+| SDK client helpers | Initialize SDK with credentials |
+
+**Key Patterns**:
+- `apiRequest()` - Centralized HTTP with authentication
+- `parseLinkHeader()` - Pagination helper
+- `getClient()` - SDK initialization helper
+
+**Related**:
+- [13-custom-execute-methods.md](./13-custom-execute-methods.md) - Using helpers in execute
+- [19-external-sdk-integration.md](./19-external-sdk-integration.md) - SDK patterns
+
+**Reference Directory**: `nodes/GithubIssues/shared/`
+
+---
+
+## HTTP Helper Methods Reference
+
+| Method | Status | Use Case |
+|--------|--------|----------|
+| `this.helpers.httpRequest(options)` | ✅ Current | Raw HTTP requests without credential handling |
+| `this.helpers.httpRequestWithAuthentication(credType, options)` | ✅ Current | HTTP with automatic credential injection |
+| `this.helpers.request(options)` | ⚠️ Deprecated | Legacy request-promise wrapper (use `httpRequest` instead) |
+| `this.helpers.requestWithAuthentication(credType, options)` | ⚠️ Deprecated | Use `httpRequestWithAuthentication` instead |
+
+> **Note**: The deprecated `request` methods use the legacy `request-promise` library. All new code should use `httpRequest` or `httpRequestWithAuthentication` which are axios-based and provide better performance.
+
+---
+
 ## Transport Function (API Requests)
 
 `shared/transport.ts`:
